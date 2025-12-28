@@ -1,6 +1,5 @@
 #![allow(unused)]
 use std::error::Error;
-use std::fs::File;
 use std::io::prelude::*;
 use rand::{distr::Alphanumeric, Rng};
 
@@ -11,25 +10,33 @@ pub enum Command {
 
 pub struct Config {
     command: Command,
-    files: Vec<String>,
+    files: Option<Vec<String>>
 }
 
 impl Config {
     pub fn new(args: &[String]) -> Result<Config, &'static str> {
         if args.len() < 2 {
-            return Err("Please specify a file to send");
+            return Err("Please specify a command");
         }
 
-        let files: Vec<String> = args[2..].to_vec();
+        match args[1].as_str() {
+            "send" => {
+                if args.len() < 3 {
+                    Err("Invalid arguments: select files for transfer")
+                } else {
+                    Ok(Config { command: Command::Send, files: Some(args[1..].to_vec()) })
+                }
+            }
 
-        let mut command: Command  = match args[1].as_str() {
-            "send" => {Command::Send},
-            "receive" => {Command::Receive},
-            _ => {return Err("Please specify a command");}
-        };
+            "receive" => {
+                Ok(Config { command: Command::Receive, files: None })
+            }
 
-        Ok(Config {command, files})
+            _ => {
+                Err("Invalid arguments provided")
+            }
 
+        }
     }
 
     pub fn generate_hash() -> String {
@@ -54,30 +61,10 @@ pub mod file_sharing{
         use std::thread;
 
         pub fn send_files() -> Result<bool,&'static str> {
-            let args: Vec<String> = env::args().collect();
+            let server_password = Config::generate_hash();
 
-            let config = Config::new(&args).unwrap_or_else(|err| {
-                eprintln!("incorrect arguments specified: {}", err);
-                process::exit(1);
-            });
+            let server = TcpListener::bind("0.0.0.0:8201");
 
-            let config_password = Config::generate_hash();
-
-            if let Command::Send = config.command {
-                let server = TcpListener::bind("0.0.0.0:8201").unwrap();
-                println!("Awaiting receiver\n on receiving end enter {config_password}");
-                
-                match server.accept() {
-                    Ok((mut stream, _addr)) => {
-                        validate_client(&mut stream, &config_password)?;
-                    },
-                    Err(e) => {
-                        eprintln!("error encountered {e:?}")
-                    }
-                };
-            }
-
-            Ok(true)
         }
 
         pub fn validate_client(stream: &mut TcpStream, server_password: &String) -> Result<bool, &'static str>{
@@ -85,7 +72,7 @@ pub mod file_sharing{
             let mut attempts = 3;
             loop {
                 let n = stream.read(&mut buffer).unwrap();
-                let password = String::from_utf8_lossy(&buffer);
+                let password = String::from_utf8_lossy(&buffer[..n]);
 
                 if password.trim() == *server_password {
                     return Ok(true)
@@ -102,6 +89,12 @@ pub mod file_sharing{
 
             Err("Invalid connection failed to provide password")
         }
+
+        pub fn generate_header(stream: &mut TcpStream, files: &[String]) -> Result<bool, &'static str>{
+
+        }
+
+        pub fn file_transfer(){}
 
 
     }

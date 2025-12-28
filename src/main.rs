@@ -38,6 +38,6 @@ fn handle_client(mut stream: TcpStream) {
         io::stdin()
             .read_line(&mut input)
             .expect("Couldn't receive user input");
-        stream.write_all(&input.trim().as_bytes());
+        stream.write_all(input.trim().as_bytes());
     }
 }
