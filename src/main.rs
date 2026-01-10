@@ -1,9 +1,9 @@
 #![allow(unused)]
 use rand::{Rng, distr::Alphanumeric};
-use std::{env, io};
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process;
+use std::{env, io};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -16,7 +16,7 @@ fn main() {
         Ok((stream, addr)) => {
             println!("{:?}", addr);
             handle_client(stream);
-        },
+        }
         Err(e) => {
             eprintln!("Client terminated request {:?}", e)
         }
